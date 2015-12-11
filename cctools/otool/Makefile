@@ -49,12 +49,28 @@ HFILES = otool.h ofile_print.h m68k_disasm.h i860_disasm.h \
 OBJS = $(CFILES:.c=.o) ofile.o
 INSTALL_FILES = $(CFILES) $(HFILES) Makefile notes
 
+FB_CFILES = main_fb.c ofile_print.c m68k_disasm.c i860_disasm.c \
+	 m88k_disasm.c i386_disasm.c ppc_disasm.c hppa_disasm.c \
+	 sparc_disasm.c print_objc.c notify.c arm_disasm.c \
+	 print_objc2_64bit.c print_objc2_32bit.c
+ifeq "$(EFITOOLS)" "efitools"
+	FB_CFILES += coff_print.c
+endif
+FB_OBJS = $(FB_CFILES:.c=.o) ofile.o
+
 PRODUCT = otool
-all: $(OFILE_DIR) $(SYMROOT) $(PRODUCT).NEW
+all: $(OFILE_DIR) $(SYMROOT) $(PRODUCT).NEW $(PRODUCT).FB
 
 $(PRODUCT).NEW:	$(OFILE_DIR) $(SYMROOT) $(OBJS)
 	$(CC) $(RC_CFLAGS) -nostdlib -r -o $(OBJROOT)/private.o \
 		$(OBJS) $(LIBSTUFF)
+	$(CXX) $(RC_CFLAGS) $(SDK) -o $(SYMROOT)/$@ $(OBJROOT)/private.o \
+		$(LIBSTUFF) $(CXXLIB)
+	$(DSYMUTIL) $(SYMROOT)/$@
+
+$(PRODUCT).FB:	$(OFILE_DIR) $(SYMROOT) $(FB_OBJS)
+	$(CC) $(RC_CFLAGS) -nostdlib -r -o $(OBJROOT)/private.o \
+		$(FB_OBJS) $(LIBSTUFF)
 	$(CXX) $(RC_CFLAGS) $(SDK) -o $(SYMROOT)/$@ $(OBJROOT)/private.o \
 		$(LIBSTUFF) $(CXXLIB)
 	$(DSYMUTIL) $(SYMROOT)/$@
